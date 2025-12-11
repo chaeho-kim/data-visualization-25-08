@@ -1,0 +1,1930 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>서울 삼청·북촌·안국 일대 향수 투어 맵</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; padding: 0; background:#f7f7f8; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  
+  /* 코스 선택 카드 영역 */
+  .course-selection {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 2000;
+    padding: 40px 20px;
+    overflow-y: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s, backdrop-filter 0.4s;
+    pointer-events: none;
+    will-change: opacity;
+  }
+  .course-selection.hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .course-selection:not(.hidden) .course-cards-container {
+    pointer-events: auto;
+  }
+  .course-selection-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .course-selection-header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 8px 0;
+  }
+  .course-selection-header p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+  }
+  .course-cards-container {
+    max-width: 1200px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 6px;
+    padding: 80px 40px 40px 40px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 100px auto 0 auto;
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.5s ease;
+    will-change: opacity, transform;
+    box-sizing: border-box;
+  }
+  /* 모드 선택 화면일 때만 박스 너비 줄이기 */
+  .course-cards-container.mode-selection-active {
+    max-width: 790px;
+    border-radius: 16px;
+    padding: 40px 4px 10px 4px;
+    margin-top: auto;
+    margin-bottom: 5vh;
+  }
+  /* 모드 선택 화면일 때 부모 요소의 정렬 변경 */
+  body.mode-selection-page .course-selection {
+    align-items: flex-end;
+  }
+  .page-title {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 10000;
+    pointer-events: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    filter: none;
+    transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  /* 모드 선택 화면일 때 타이틀을 정중앙에 */
+  body.mode-selection-page .page-title {
+    top: 45%;
+    transform: translate(-50%, -50%);
+  }
+  .page-title h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    filter: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: font-size 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  /* 모드 선택 화면일 때 타이틀 크기 키우기 */
+  body.mode-selection-page .page-title h1 {
+    font-size: 36px;
+  }
+  .course-selection.hidden .course-cards-container {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  .course-selection:not(.hidden) .course-cards-container {
+    opacity: 1;
+  }
+  /* 일반 화면일 때 박스 위치 */
+  .course-cards-container:not(.mode-selection-active) {
+    transform: translateY(0);
+  }
+  .course-section {
+    margin-bottom: 22px;
+  }
+  .course-section:last-child {
+    margin-bottom: 0;
+  }
+  .course-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #9ca3af;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .course-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    overflow: visible;
+  }
+  .course-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .course-card.short-route {
+    padding: 20px;
+    background: #f5f5f7;
+    border: 1px solid #e0e0e3;
+  }
+  .course-card:hover {
+    border: 3px solid #111827;
+    z-index: 10;
+    margin: -1px;
+  }
+  .course-card-type {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .course-card-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 8px 0;
+  }
+  .course-card.short-route .course-card-title {
+    font-size: 18px;
+    margin: 0 0 12px 0;
+    color: #111827;
+  }
+  .course-card.short-route .course-card-type {
+    color: #6b7280;
+  }
+  .course-card.short-route .course-card-meta {
+    color: #6b7280;
+  }
+  .course-card.short-route .course-card-meta-icon {
+    background: #9ca3af;
+  }
+  .course-card.short-route:hover {
+    border: 3px solid #111827;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .course-card.short-route .course-card-brand-chip {
+    background: #e5e7eb;
+    color: #374151;
+  }
+  .course-card-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+  }
+  .course-card.short-route .course-card-description {
+    display: none;
+  }
+  .course-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: #374151;
+  }
+  .course-card-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .course-card-meta-icon {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #6b7280;
+    flex-shrink: 0;
+  }
+  .course-card-brands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .course-card-brand-chip {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #374151;
+  }
+  .mode-selection {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    margin-bottom: 32px;
+    justify-content: center;
+  }
+  .mode-button {
+    flex: 0 1 auto;
+    max-width: 340px;
+    width: 100%;
+    padding: 24px;
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .mode-button:hover {
+    background: #111827;
+    border: 3px solid #111827;
+    z-index: 10;
+    margin: -1px;
+  }
+  .mode-button:hover .mode-button-title {
+    color: #ffffff;
+  }
+  .mode-button:hover .mode-button-description {
+    color: #d1d5db;
+  }
+  .mode-button.active {
+    border: 3px solid #111827;
+    z-index: 10;
+    margin: -1px;
+  }
+  .mode-button-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 10px;
+    transition: color 0.2s;
+  }
+  .mode-button-description {
+    font-size: 13px;
+    font-weight: 400;
+    color: #6b7280;
+    transition: color 0.2s;
+  }
+  .filter-mode-view {
+    display: none;
+  }
+  .filter-mode-view.active {
+    display: block;
+  }
+  /* 필터 모드 화면일 때 박스 너비 줄이기 */
+  .course-cards-container.filter-mode-active {
+    max-width: 800px;
+  }
+  .recommended-mode-view {
+    display: none;
+  }
+  .recommended-mode-view.active {
+    display: block;
+  }
+  .back-to-mode-selection {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+  }
+  .back-to-mode-selection::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-left: 2px solid #374151;
+    border-bottom: 2px solid #374151;
+    transform: rotate(45deg);
+    margin-left: 3px;
+  }
+  .back-to-mode-selection:hover {
+    background: #f9fafb;
+    border: 3px solid #111827;
+    transform: scale(1.03);
+  }
+  .back-to-mode-selection:hover::before {
+    border-color: #111827;
+  }
+  .next-step-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+    background: #111827;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+  }
+  .next-step-button::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #ffffff;
+    border-top: 2px solid #ffffff;
+    transform: rotate(45deg);
+    margin-right: 3px;
+  }
+  .next-step-button:hover:not(:disabled) {
+    background: #f9fafb;
+    border: 3px solid #111827;
+    transform: scale(1.03);
+  }
+  .next-step-button:hover:not(:disabled)::before {
+    border-color: #111827;
+  }
+  .next-step-button:disabled {
+    background: #9ca3af;
+    border-color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .next-step-button:disabled::before {
+    border-color: #ffffff;
+  }
+  .filter-section {
+    margin-bottom: 32px;
+    padding-bottom: 0;
+  }
+  .filter-section:last-of-type {
+    margin-bottom: 24px;
+    padding-bottom: 0;
+  }
+  .filter-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .filter-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .filter-button {
+    padding: 16px 20px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .filter-button:hover {
+    border: 3px solid #111827;
+    z-index: 10;
+    margin: -1px;
+  }
+  .filter-button.active {
+    border: 3px solid #111827;
+    background: #111827;
+    color: #ffffff;
+    z-index: 10;
+    margin: -1px;
+  }
+  .filtered-courses-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-top: 24px;
+    margin-bottom: 16px;
+  }
+  
+  /* 맵 영역 */
+  .map-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+  #map {
+    position: absolute;
+    inset: 0;
+  }
+  
+  /* 코스 상세 패널 */
+  .route-detail-panel {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 360px;
+    background: #ffffff;
+    box-shadow: 2px 0 8px rgba(0,0,0,.08);
+    z-index: 1000;
+    padding: 24px;
+    padding-top: 80px;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  .route-detail-panel.active {
+    transform: translateX(0);
+  }
+  .route-detail-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .route-detail-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 8px 0;
+  }
+  .route-detail-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 12px 0;
+  }
+  .route-detail-meta {
+    font-size: 13px;
+    color: #374151;
+  }
+  .route-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .route-step {
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .route-step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #111827;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .route-step-content {
+    flex: 1;
+    min-width: 0;
+  }
+  .route-step-store {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+  .route-step-name-en {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 2px;
+  }
+  .route-step-city {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-bottom: 8px;
+  }
+  .route-step-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .route-step-tag {
+    background: #f3f4f6;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: #374151;
+  }
+  .route-step-time {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+  .route-move-time {
+    text-align: center;
+    padding: 12px 0;
+    font-size: 12px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .route-move-time::before,
+  .route-move-time::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+  }
+  .back-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+    padding: 0;
+  }
+  .back-button::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-left: 2px solid #374151;
+    border-bottom: 2px solid #374151;
+    transform: rotate(45deg);
+    margin-left: 3px;
+  }
+  .back-button.active {
+    display: flex;
+  }
+  .back-button:hover {
+    background: #f9fafb;
+    border: 3px solid #111827;
+    transform: scale(1.03);
+  }
+  .back-button:hover::before {
+    border-color: #111827;
+  }
+  
+  /* Leaflet Routing Machine 패널 숨기기 */
+  .leaflet-routing-container {
+    display: none !important;
+  }
+  
+  /* Leaflet Routing Machine waypoint 마커 숨기기 */
+  .leaflet-routing-waypoint {
+    display: none !important;
+  }
+  
+  /* 라우팅 라인 부드럽게 및 줌 레벨에 따른 굵기 유지 */
+  .leaflet-routing-line {
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    stroke-miterlimit: 20; /* 라인 연결부를 더 매끈하게 (높을수록 더 부드러움) */
+    z-index: 1000 !important; /* 가장 위 레이어로 */
+    position: relative;
+  }
+  
+  /* 라인을 더 매끈하게 */
+  .leaflet-routing-line path {
+    vector-effect: non-scaling-stroke;
+    shape-rendering: optimizeQuality; /* 최고 품질로 부드럽게 렌더링 */
+    z-index: 1000 !important;
+  }
+  
+  /* SVG 레이어를 가장 위로 */
+  .leaflet-pane svg {
+    z-index: 600 !important;
+  }
+  
+  /* 이동 시간 표시 마커 */
+  .route-time-marker {
+    background: transparent;
+    border: none;
+    z-index: 2000 !important;
+  }
+  .route-time-label {
+    background: transparent;
+    color: #6b7280;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  }
+  
+  /* 마커 스타일 */
+  .marker-container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .marker-dot {
+    background:#ffffff;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    border:1px solid #d1d5db;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+    cursor:pointer;
+    flex-shrink: 0;
+    margin-top: 1px; /* 마커와 국문명을 같은 가로선에 맞추기 위한 조정 */
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .marker-dot.route-active {
+    background: #111827;
+    border-color: #111827;
+    width: 16px;
+    height: 16px;
+  }
+  /* 마커 호버 시 확대 효과 (마커만) - 마커 점에 직접 호버했을 때만 */
+  .marker-dot:hover {
+    transform: scale(2);
+    z-index: 1000;
+  }
+  .marker-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: #374151;
+    white-space: nowrap;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    pointer-events: none;
+    line-height: 1.3;
+  }
+  .marker-label-name-ko {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .marker-label-name-en {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+  .marker-label-city {
+    font-size: 11px;
+    font-weight: 400;
+    color: #9ca3af;
+  }
+  .marker-label-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .marker-label-tag {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    color: #374151;
+    font-weight: 500;
+  }
+  .marker-popup {
+    font-size:13px;
+    line-height:1.6;
+  }
+  .marker-popup h3 {
+    margin:0 0 8px 0;
+    font-size:15px;
+    font-weight:700;
+    color:#111827;
+  }
+  .marker-popup .address {
+    color:#6b7280;
+    margin-top:4px;
+  }
+  .tooltip-box {
+    position:absolute;
+    background:#000000;
+    color:#ffffff;
+    padding:12px 16px;
+    border-radius:4px;
+    font-size:12px;
+    white-space:normal;
+    max-width:280px;
+    z-index:10000;
+    pointer-events:none;
+    box-shadow:0 4px 12px rgba(0,0,0,0.3);
+    transform:translate(-50%, -50%) scale(0.3);
+    transform-origin:center center;
+    transition:transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border:1px solid #374151;
+    opacity:0;
+  }
+  .tooltip-box.show {
+    transform:translate(-50%, -50%) scale(1);
+    opacity:1;
+  }
+  .tooltip-name-ko {
+    font-size:16px;
+    font-weight:700;
+    margin-bottom:4px;
+    color:#ffffff;
+  }
+  .tooltip-name-en {
+    font-size:13px;
+    margin-bottom:2px;
+    color:#d1d5db;
+  }
+  .tooltip-city {
+    font-size:11px;
+    color:#9ca3af;
+    margin-bottom:8px;
+  }
+  .tooltip-tags {
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px;
+    margin-top:8px;
+  }
+  .tooltip-tag {
+    background:#374151;
+    padding:3px 8px;
+    border-radius:4px;
+    font-size:10px;
+    color:#e5e7eb;
+  }
+  .tooltip-homepage {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #374151;
+  }
+  .tooltip-homepage-button {
+    display: inline-block;
+    padding: 6px 12px;
+    background: #ffffff;
+    color: #000000;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    pointer-events: auto; /* 링크 클릭 가능하도록 */
+  }
+  .tooltip-homepage-button:hover {
+    background: #f3f4f6;
+  }
+</style>
+</head>
+<body>
+<!-- 페이지 타이틀 -->
+<div class="page-title">
+      <h1>Bukchon Fragrance Tour Map</h1>
+</div>
+
+<!-- 코스 선택 영역 -->
+<div class="course-selection" id="courseSelection">
+  <div class="course-cards-container">
+    <!-- 모드 선택 화면 -->
+    <div class="mode-selection" id="modeSelection">
+      <button class="mode-button" id="recommendedModeBtn">
+        <div class="mode-button-title">추천 코스</div>
+        <div class="mode-button-description">미리 준비된 추천 코스를 선택하세요</div>
+      </button>
+      <button class="mode-button" id="filterModeBtn">
+        <div class="mode-button-title">직접 선택</div>
+        <div class="mode-button-description">원하는 태그를 선택하여 맞춤 코스를 찾아보세요</div>
+      </button>
+    </div>
+    
+    <!-- 추천 모드 화면 -->
+    <div class="recommended-mode-view" id="recommendedModeView">
+      <button class="back-to-mode-selection" id="backToRecommendedModeSelection" aria-label="모드 선택으로 돌아가기"></button>
+      <div class="course-section">
+        <div class="course-cards" id="fullRoutes"></div>
+      </div>
+      <div class="course-section">
+        <div class="course-cards" id="shortRoutes"></div>
+      </div>
+    </div>
+    
+    <!-- 필터 모드 화면 -->
+    <div class="filter-mode-view" id="filterModeView">
+      <button class="back-to-mode-selection" id="backToModeSelection" aria-label="모드 선택으로 돌아가기"></button>
+      <button class="next-step-button" id="nextStepButton" disabled aria-label="다음 단계"></button>
+      <div class="filter-section">
+        <div class="filter-section-title">Space Mood</div>
+        <div class="filter-buttons" id="spaceMoodFilters"></div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-section-title">Use Case</div>
+        <div class="filter-buttons" id="useCaseFilters"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 맵 영역 -->
+<div class="map-container" id="mapContainer">
+  <button class="back-button" id="backButton" aria-label="코스 선택으로 돌아가기"></button>
+  <div id="map"></div>
+  <div class="route-detail-panel" id="routeDetailPanel">
+    <div class="route-detail-header">
+      <h2 id="routeDetailTitle"></h2>
+      <p class="route-detail-description" id="routeDetailDescription"></p>
+      <div class="route-detail-meta" id="routeDetailMeta"></div>
+    </div>
+    <div class="route-steps" id="routeSteps"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<!-- 코스 경로 데이터 파일 (별도 관리) -->
+<script src="./routes.js"></script>
+<script>
+
+// 매장 데이터 (id 추가)
+const STORES = {
+  "le_labo_bukchon": { "id": "le_labo_bukchon", "name": "르 라보 북촌 한옥", "name_ko": "르 라보 북촌 한옥", "address": "서울 종로구 북촌로5나길 5", "lat": 37.581103, "lng": 126.981867, "homepage": "https://www.lelabofragrances.co.kr" },
+  "born_to_stand_out_samcheong": { "id": "born_to_stand_out_samcheong", "name": "본투스탠드아웃 플래그십 삼청", "name_ko": "본투스탠드아웃 플래그십 삼청", "address": "서울 종로구 삼청로 69", "lat": 37.581753, "lng": 126.981112, "homepage": "https://borntostandout.com" },
+  "daniels_truth_samcheong": { "id": "daniels_truth_samcheong", "name": "다니엘트루스 퍼퓸하우스 삼청", "name_ko": "다니엘트루스 퍼퓸하우스 삼청", "address": "서울 종로구 삼청로 72", "lat": 37.581931, "lng": 126.981555, "homepage": "https://danielstruth.com" },
+  "villa_herbatium": { "id": "villa_herbatium", "name": "빌라 에르바티움", "name_ko": "빌라 에르바티움", "address": "서울 종로구 팔판길 15", "lat": 37.582573, "lng": 126.980855, "homepage": "https://en.villaerbatium.com" },
+  "aesop_samcheong": { "id": "aesop_samcheong", "name": "이솝 삼청", "name_ko": "이솝 삼청", "address": "서울 종로구 소격동 56", "lat": 37.580927, "lng": 126.980483, "homepage": "https://www.aesop.com" },
+  "nonfiction_samcheong": { "id": "nonfiction_samcheong", "name": "논픽션 삼청", "name_ko": "논픽션 삼청", "address": "서울 종로구 북촌로5길 84", "lat": 37.580093, "lng": 126.980387, "homepage": "https://nonfiction.kr" },
+  "youssoful_samcheong": { "id": "youssoful_samcheong", "name": "유쏘풀 삼청", "name_ko": "유쏘풀 삼청", "address": "서울 종로구 북촌로5가길 15", "lat": 37.580186, "lng": 126.981958, "homepage": "https://youssoful.co.kr" },
+  "cosmic_mansion_bukchon": { "id": "cosmic_mansion_bukchon", "name": "코스믹맨션 북촌", "name_ko": "코스믹맨션 북촌", "address": "서울 종로구 북촌로5가길 12", "lat": 37.580174, "lng": 126.982207, "homepage": "https://cosmicmansion.co.kr" },
+  "tamburins_samcheong": { "id": "tamburins_samcheong", "name": "탬버린즈 삼청 플래그십스토어", "name_ko": "탬버린즈 삼청 플래그십스토어", "address": "서울 종로구 율곡로3길 84", "lat": 37.57935, "lng": 126.98235, "homepage": "https://tamburins.com" },
+  "granhand_sogyeok": { "id": "granhand_sogyeok", "name": "그랑핸드 소격", "name_ko": "그랑핸드 소격", "address": "서울 종로구 율곡로3길 69", "lat": 37.57869, "lng": 126.981933, "homepage": "https://granhand.com" },
+  "lenezlab_gyedong": { "id": "lenezlab_gyedong", "name": "르네랩", "name_ko": "르네랩", "address": "서울 종로구 계동길 96", "lat": 37.581645, "lng": 126.986812, "homepage": "https://lenezlab.com" },
+  "hetras_anguk": { "id": "hetras_anguk", "name": "헤트라스 안국", "name_ko": "헤트라스 안국", "address": "서울 종로구 창덕궁1길 42", "lat": 37.579403, "lng": 126.986814, "homepage": "https://hetras.co.kr" },
+  "chwi_bukchon": { "id": "chwi_bukchon", "name": "취 북촌 플래그십스토어", "name_ko": "취 북촌 플래그십스토어", "address": "서울 종로구 계동길 5", "lat": 37.577705, "lng": 126.986584, "homepage": "https://www.chwi.co.kr" },
+  "matthew_chang_anguk": { "id": "matthew_chang_anguk", "name": "메튜장 안국", "name_ko": "메튜장 안국", "address": "서울 종로구 율곡로 33", "lat": 37.575918, "lng": 126.983438, "homepage": "https://matthewchangperfumes.com" }
+};
+
+// 전역 변수
+let map = null;
+let routeMarkers = [];
+let currentRoutingControl = null;
+let currentRoutingControls = []; // 각 구간별 라우팅 컨트롤 저장
+let currentRoute = null;
+let tooltip = null;
+let storeDetails = {};
+let selectedFilters = new Set();
+
+// 상세 데이터 로드
+fetch('./perfume_shops_detail.json')
+  .then(r => r.json())
+  .then(detailData => {
+    detailData.forEach(detail => {
+      storeDetails[detail.id] = detail;
+    });
+    // 필터 UI 생성
+    initFilters();
+    // 추천 코스 로드
+    loadRecommendedRoutes();
+    // 모드 선택 이벤트 설정
+    setupModeSelection();
+  })
+  .catch(err => {
+    console.error('상세 데이터 로드 오류:', err);
+  });
+
+// 지도 초기화
+function initMap() {
+  const ANGKUK_CENTER = [37.5765, 126.9850];
+  
+  map = L.map('map', {
+    zoomControl: false,
+    minZoom: 17, // 첫 화면 줌 레벨(17)에서 더 축소되지 않도록 제한
+    maxZoom: 17, // 줌 레벨 17로 고정
+    preferCanvas: true,
+    zoomAnimation: true,
+    zoomAnimationDuration: 400, // 줌 애니메이션 시간 증가 (기본 250ms → 400ms)
+    fadeAnimation: true,
+    markerZoomAnimation: true,
+    inertia: true,
+    wheelDebounceTime: 40, // 줌 반응 지연 시간 증가 (20 → 40ms)
+    wheelPxPerZoomLevel: 120 // 줌 속도 감소 (80 → 120px, 더 느리게)
+  }).setView(ANGKUK_CENTER, 17);
+
+  const base = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap & CARTO',
+    subdomains: 'abcd',
+    maxZoom: 18,
+    noWrap: false,
+    updateWhenZooming: true,
+    updateWhenIdle: true,
+    keepBuffer: 12,
+    tileSize: 256,
+    zoomOffset: 0
+  }).addTo(map);
+
+  // 드래그 제한 (좌우 범위를 넓혀서 자유롭게 이동 가능하도록)
+  const restrictedBounds = L.latLngBounds(
+    [37.574, 126.975],  // 좌우 범위 확대 (126.978 -> 126.975)
+    [37.584, 126.992]   // 좌우 범위 확대 (126.989 -> 126.992)
+  );
+  const tileBounds = restrictedBounds.pad(0.2);  // 패딩도 약간 증가
+  map.setMaxBounds(tileBounds);
+  map.options.maxBoundsViscosity = 0.3;  // viscosity 낮춰서 더 자유롭게 이동 가능
+
+  // 맵 클릭 시 툴팁 제거
+  map.on('click', function(e) {
+    // 마커 클릭이 아닌 맵 클릭인 경우에만 툴팁 제거
+    if (e.originalEvent && !e.originalEvent.target.closest('.marker-container')) {
+      removeTooltip();
+    }
+  });
+
+  // 드래그 제한 이벤트 (위아래는 제한하되 좌우는 더 관대하게)
+  map.on('moveend', function() {
+    const center = map.getCenter();
+    const currentZoom = map.getZoom();
+    
+    // 위아래(lat)는 엄격하게 제한, 좌우(lng)는 확대 시 더 넓게 허용
+    let newLat = center.lat;
+    let newLng = center.lng;
+    
+    // 위아래 제한
+    if (center.lat < restrictedBounds.getSouth() || center.lat > restrictedBounds.getNorth()) {
+      newLat = Math.max(restrictedBounds.getSouth(), Math.min(restrictedBounds.getNorth(), center.lat));
+    }
+    
+    // 좌우 제한 (확대 시 더 넓은 범위 허용)
+    const lngPadding = currentZoom >= 18 ? 0.008 : 0.004;  // 확대 시 좌우 여유 공간 증가
+    const lngWest = restrictedBounds.getWest() - lngPadding;
+    const lngEast = restrictedBounds.getEast() + lngPadding;
+    
+    if (center.lng < lngWest || center.lng > lngEast) {
+      newLng = Math.max(lngWest, Math.min(lngEast, center.lng));
+    }
+    
+    // 위아래만 제한이 걸렸을 때만 이동
+    if (newLat !== center.lat || (newLng !== center.lng && Math.abs(newLng - center.lng) > 0.001)) {
+      map.panTo([newLat, newLng], { animate: true, duration: 0.3 });
+    }
+    
+    map.invalidateSize();
+  });
+
+  map.on('zoomend', function() {
+    map.invalidateSize();
+    // 줌 변경 시 마커 크기 업데이트
+    updateMarkerSizes();
+  });
+  
+  // 마커 크기 업데이트 함수 (전역)
+  window.updateMarkerSizes = function() {
+    if (!map || routeMarkers.length === 0) return;
+    const zoom = map.getZoom();
+    
+    // 줌 레벨에 따른 마커 크기 계산 함수
+    function getMarkerSize(zoom, isActive) {
+      const baseZoom = 17; // 첫 화면 줌 레벨을 기준으로 변경
+      const zoomFactor = Math.pow(1.25, zoom - baseZoom); // 줌 레벨이 1 증가할 때마다 1.25배씩 증가
+      
+      const baseDotSize = isActive ? 16 : 14;
+      const baseIconWidth = isActive ? 200 : 180;
+      const baseIconHeight = isActive ? 50 : 45;
+      const baseAnchor = isActive ? 8 : 7;
+      
+      return {
+        dotSize: baseDotSize * zoomFactor,
+        iconWidth: baseIconWidth * zoomFactor,
+        iconHeight: baseIconHeight * zoomFactor,
+        anchor: baseAnchor * zoomFactor
+      };
+    }
+    
+    routeMarkers.forEach(marker => {
+      if (marker._storeData && marker._isActive !== undefined) {
+        const newIcon = createMarkerIcon(marker._storeData, marker._isActive, zoom);
+        marker.setIcon(newIcon);
+      }
+    });
+  };
+  
+
+  // 서울 경계 로드 및 마스킹
+  fetch('https://raw.githubusercontent.com/raqoon886/Local_HangJeongDong/master/hangjeongdong_%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C.geojson')
+    .then(r => r.json())
+    .then(geo => {
+      const seoul = L.geoJSON(geo, {
+        style: { color: '#d1d5db', weight: 0.6, opacity: 0.5, fill: false }
+      }).addTo(map);
+
+      const world = [[-90, -180], [-90, 180], [90, 180], [90, -180]];
+      const rings = [];
+      function collect(g) {
+        if (g.type === 'Polygon') rings.push(...g.coordinates);
+        else if (g.type === 'MultiPolygon') g.coordinates.forEach(p => rings.push(...p));
+      }
+      geo.features.forEach(f => collect(f.geometry));
+      const holes = rings.map(r => r.map(([x, y]) => [y, x]));
+      
+      const maskPane = map.createPane('maskPane');
+      maskPane.style.zIndex = 450;
+      maskPane.style.pointerEvents = 'none';
+      const maskRenderer = L.canvas({ padding: 0.5 });
+      
+      L.polygon([world, ...holes], {
+        pane: 'maskPane',
+        renderer: maskRenderer,
+        stroke: false,
+        fill: true,
+        fillOpacity: 1,
+        fillColor: '#f7f7f8',
+        interactive: false,
+        fillRule: 'evenodd'
+      }).addTo(map);
+    })
+    .catch(err => {
+      console.error(err);
+    });
+}
+
+// 브랜드 이름 추출 함수 (매장 이름에서 짧은 브랜드 이름 추출)
+function extractBrandName(storeName) {
+  if (!storeName) return '';
+  
+  // 지역명이나 매장 타입 제거
+  const removeWords = ['삼청', '북촌', '안국', '소격', '계동', '한옥', '플래그십', '플래그십스토어', '퍼퓸하우스'];
+  let brandName = storeName;
+  
+  // 제거할 단어들을 하나씩 제거
+  removeWords.forEach(word => {
+    brandName = brandName.replace(new RegExp(`\\s*${word}\\s*`, 'g'), ' ').trim();
+  });
+  
+  // 공백으로 분리하여 첫 번째 또는 첫 두 단어만 사용
+  const parts = brandName.split(/\s+/);
+  
+  // "르 라보" 같은 경우는 두 단어 사용
+  if (parts.length >= 2 && (parts[0] === '르' || parts[0] === '빌라')) {
+    return parts.slice(0, 2).join(' ');
+  }
+  
+  // 나머지는 첫 번째 단어만
+  return parts[0] || brandName;
+}
+
+// 코스 카드 생성
+function createCourseCard(route) {
+  const card = document.createElement('div');
+  card.className = route.type === 'short' ? 'course-card short-route' : 'course-card';
+  card.setAttribute('data-route-id', route.id);
+  
+  const timeText = route.type === 'full' ? '약 1시간 10분' : '약 40분';
+  
+  // 코스에 포함된 브랜드 이름 추출
+  const brandNames = [];
+  const seenBrands = new Set();
+  route.stores.forEach(step => {
+    const store = STORES[step.store_id];
+    if (store) {
+      const brandName = extractBrandName(store.name_ko || store.name);
+      if (brandName && !seenBrands.has(brandName)) {
+        seenBrands.add(brandName);
+        brandNames.push(brandName);
+      }
+    }
+  });
+  
+  const brandsHtml = brandNames.length > 0 
+    ? `<div class="course-card-brands">${brandNames.map(brand => `<span class="course-card-brand-chip">${brand}</span>`).join('')}</div>`
+    : '';
+  
+  // 숏 루트는 더 간결하게
+  if (route.type === 'short') {
+    card.innerHTML = `
+      <div class="course-card-type">Short Route</div>
+      <h3 class="course-card-title">${route.name}</h3>
+      <div class="course-card-meta">
+        <div class="course-card-meta-item">
+          <span class="course-card-meta-icon"></span>
+          <span>${timeText}</span>
+        </div>
+      </div>
+      ${brandsHtml}
+    `;
+  } else {
+    card.innerHTML = `
+      <div class="course-card-type">${route.type === 'full' ? 'Full Route' : 'Short Route'}</div>
+      <h3 class="course-card-title">${route.name}</h3>
+      <p class="course-card-description">${route.description_ko}</p>
+      <div class="course-card-meta">
+        <div class="course-card-meta-item">
+          <span class="course-card-meta-icon"></span>
+          <span>${timeText}</span>
+        </div>
+      </div>
+      ${brandsHtml}
+    `;
+  }
+  
+  card.addEventListener('click', () => selectRoute(route.id));
+  return card;
+}
+
+// 코스 카드 렌더링
+
+// 코스 선택
+function selectRoute(routeId) {
+  const route = ROUTES[routeId];
+  if (!route) return;
+  
+  currentRoute = route;
+  
+  // 코스 선택 화면 숨기기 (애니메이션 시작)
+  const courseSelection = document.getElementById('courseSelection');
+  courseSelection.classList.add('hidden');
+  
+  // 애니메이션 완료 후 맵 업데이트
+  setTimeout(() => {
+    // 뒤로가기 버튼 표시
+    document.getElementById('backButton').classList.add('active');
+    
+    // 지도가 아직 초기화되지 않았다면 초기화
+    if (!map) {
+      initMap();
+      setTimeout(() => {
+        updateMapForRoute(route);
+        showRouteDetail(route);
+      }, 100);
+    } else {
+      updateMapForRoute(route);
+      showRouteDetail(route);
+    }
+  }, 200); // 애니메이션 중간 시점에 시작
+}
+
+// 맵 업데이트 (코스에 맞게)
+function updateMapForRoute(route) {
+  // 1. 이전 경로 제거
+  if (currentRoutingControl) {
+    map.removeControl(currentRoutingControl);
+    currentRoutingControl = null;
+  }
+  // 이전 라우팅 컨트롤들 제거
+  if (currentRoutingControls && currentRoutingControls.length > 0) {
+    currentRoutingControls.forEach(control => {
+      if (control) {
+        map.removeControl(control);
+      }
+    });
+    currentRoutingControls = [];
+  }
+  
+  // 기존 마커 제거
+  routeMarkers.forEach(marker => map.removeLayer(marker));
+  routeMarkers = [];
+  
+  // 코스의 매장들만 표시 (order 순서대로 정렬)
+  const routeStoreIds = route.stores.map(s => s.store_id);
+  const routeStores = route.stores
+    .sort((a, b) => a.order - b.order)  // order 순서대로 정렬
+    .map(step => {
+      const store = STORES[step.store_id];
+      if (!store) return null;
+      // 상세 데이터 병합
+      const detail = storeDetails[store.id] || {};
+      const mergedStore = { ...store, ...detail, order: step.order, stay_time_min: step.stay_time_min, move_to_next_min: step.move_to_next_min };
+      return mergedStore;
+    })
+    .filter(Boolean);
+  
+  // 2. 코스에 포함된 매장 좌표 수집 (waypoints)
+  const waypoints = [];
+  
+  // 줌 레벨에 따른 마커 크기 계산 함수
+  const getMarkerSize = function(zoom, isActive) {
+    const baseZoom = 17; // 첫 화면 줌 레벨을 기준으로 변경
+    const zoomFactor = Math.pow(1.25, zoom - baseZoom); // 줌 레벨이 1 증가할 때마다 1.25배씩 증가
+    
+    const baseDotSize = isActive ? 16 : 14;
+    const baseIconWidth = isActive ? 200 : 180;
+    const baseIconHeight = isActive ? 50 : 45;
+    const baseAnchor = isActive ? 8 : 7;
+    
+    return {
+      dotSize: baseDotSize * zoomFactor,
+      iconWidth: baseIconWidth * zoomFactor,
+      iconHeight: baseIconHeight * zoomFactor,
+      anchor: baseAnchor * zoomFactor
+    };
+  };
+  
+  // 마커 아이콘 생성 함수
+  const createMarkerIcon = function(store, isActive, zoom) {
+    const sizes = getMarkerSize(zoom, isActive);
+    
+    const labelHtml = `
+      <div class="marker-label">
+        <div class="marker-label-name-ko">${store.name_ko || store.name}</div>
+        ${store.name_en ? `<div class="marker-label-name-en">${store.name_en}</div>` : ''}
+      </div>
+    `;
+    
+    return L.divIcon({
+      className: 'marker-container',
+      html: `
+        <div class="marker-container">
+          <div class="marker-dot ${isActive ? 'route-active' : ''}" style="width: ${sizes.dotSize}px; height: ${sizes.dotSize}px;"></div>
+          ${labelHtml}
+        </div>
+      `,
+      iconSize: [sizes.iconWidth, sizes.iconHeight],
+      iconAnchor: [0, sizes.anchor]
+    });
+  };
+  
+  const currentZoom = map.getZoom();
+  
+  routeStores.forEach((store, index) => {
+    if (!store.lat || !store.lng) return;
+    
+    // 마커 아이콘 (코스에 포함된 매장은 강조)
+    const isActive = routeStoreIds.includes(store.id);
+    const icon = createMarkerIcon(store, isActive, currentZoom);
+    
+    const marker = L.marker([store.lat, store.lng], { 
+      icon
+    }).addTo(map);
+    
+    // 마커에 store 정보 저장 (줌 변경 시 업데이트용)
+    marker._storeData = store;
+    marker._isActive = isActive;
+    
+    // 마커 클릭 시 툴팁 표시
+    marker.on('click', function(e) {
+      e.originalEvent.stopPropagation(); // 맵 클릭 이벤트 전파 방지
+      const container = marker._icon;
+      if (container) {
+        // 마커 점(marker-dot)의 실제 중심 좌표 찾기
+        const markerDot = container.querySelector('.marker-dot');
+        if (markerDot) {
+          const dotRect = markerDot.getBoundingClientRect();
+          const centerX = dotRect.left + dotRect.width / 2;
+          const centerY = dotRect.top + dotRect.height / 2;
+          // 이미 같은 툴팁이 표시되어 있으면 제거, 없으면 표시
+          if (tooltip && tooltip.dataset.storeId === store.id) {
+            removeTooltip();
+          } else {
+            createTooltip(store, centerX, centerY);
+            if (tooltip) {
+              tooltip.dataset.storeId = store.id;
+            }
+          }
+        }
+      }
+    });
+    
+    routeMarkers.push(marker);
+    waypoints.push(L.latLng(store.lat, store.lng));
+  });
+  
+  // 3. 각 구간별로 라우팅하여 라인 생성 및 이동 시간 표시
+  if (waypoints.length > 1) {
+    const allBounds = L.latLngBounds(waypoints); // 초기 bounds는 waypoints로 설정
+    let routesFoundCount = 0;
+    const totalSegments = waypoints.length - 1;
+    
+    // 각 구간별로 개별 라우팅 (병렬 처리)
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      let segmentWaypoints = [waypoints[i], waypoints[i + 1]];
+      const moveTime = routeStores[i].move_to_next_min || 0;
+      
+      // 르 라보에서 르네랩으로 가는 구간인지 확인 (북촌로 8길을 거치도록 중간 waypoint 추가)
+      const isLeLaboToLenezlab = (
+        (waypoints[i].lat >= 37.580 && waypoints[i].lat <= 37.583 && 
+         waypoints[i].lng >= 126.981 && waypoints[i].lng <= 126.983) &&
+        (waypoints[i + 1].lat >= 37.580 && waypoints[i + 1].lat <= 37.583 && 
+         waypoints[i + 1].lng >= 126.986 && waypoints[i + 1].lng <= 126.988)
+      ) || (
+        (waypoints[i + 1].lat >= 37.580 && waypoints[i + 1].lat <= 37.583 && 
+         waypoints[i + 1].lng >= 126.981 && waypoints[i + 1].lng <= 126.983) &&
+        (waypoints[i].lat >= 37.580 && waypoints[i].lat <= 37.583 && 
+         waypoints[i].lng >= 126.986 && waypoints[i].lng <= 126.988)
+      );
+      
+      // 코스믹맨션에서 빌라 에르바티움으로 가는 구간인지 확인 (다른 경로로 유도)
+      const isCosmicToVilla = (
+        (waypoints[i].lat >= 37.579 && waypoints[i].lat <= 37.581 && 
+         waypoints[i].lng >= 126.981 && waypoints[i].lng <= 126.983) &&
+        (waypoints[i + 1].lat >= 37.581 && waypoints[i + 1].lat <= 37.584 && 
+         waypoints[i + 1].lng >= 126.980 && waypoints[i + 1].lng <= 126.982)
+      ) || (
+        (waypoints[i + 1].lat >= 37.579 && waypoints[i + 1].lat <= 37.581 && 
+         waypoints[i + 1].lng >= 126.981 && waypoints[i + 1].lng <= 126.983) &&
+        (waypoints[i].lat >= 37.581 && waypoints[i].lat <= 37.584 && 
+         waypoints[i].lng >= 126.980 && waypoints[i].lng <= 126.982)
+      );
+      
+      // 코스믹맨션에서 르 라보로 가는 구간인지 확인 (더 가까운 경로로 유도)
+      const isCosmicToLeLabo = (
+        (waypoints[i].lat >= 37.580 && waypoints[i].lat <= 37.581 && 
+         waypoints[i].lng >= 126.982 && waypoints[i].lng <= 126.983) &&
+        (waypoints[i + 1].lat >= 37.581 && waypoints[i + 1].lat <= 37.582 && 
+         waypoints[i + 1].lng >= 126.981 && waypoints[i + 1].lng <= 126.982)
+      ) || (
+        (waypoints[i + 1].lat >= 37.580 && waypoints[i + 1].lat <= 37.581 && 
+         waypoints[i + 1].lng >= 126.982 && waypoints[i + 1].lng <= 126.983) &&
+        (waypoints[i].lat >= 37.581 && waypoints[i].lat <= 37.582 && 
+         waypoints[i].lng >= 126.981 && waypoints[i].lng <= 126.982)
+      );
+      
+      // 르 라보->르네랩 구간인 경우 북촌로 8길을 거치도록 중간 waypoint 추가
+      if (isLeLaboToLenezlab) {
+        const bukchonro8gil = L.latLng(37.5814, 126.9843);
+        segmentWaypoints = [waypoints[i], bukchonro8gil, waypoints[i + 1]];
+      }
+      
+      // 코스믹맨션->르 라보 구간인 경우 북촌로 5가길을 따라가는 직접 경로로 유도
+      if (isCosmicToLeLabo) {
+        // 북촌로 5가길을 따라가는 중간 지점 설정
+        const bukchonro5gil = L.latLng(37.5806, 126.9820);
+        segmentWaypoints = [waypoints[i], bukchonro5gil, waypoints[i + 1]];
+      }
+      
+      // 코스믹맨션->빌라 에르바티움 구간인 경우 다른 경로로 유도하기 위한 중간 waypoint 추가
+      if (isCosmicToVilla) {
+        // 중간 지점을 약간 동쪽으로 설정하여 다른 경로로 유도
+        const alternativePath = L.latLng(37.5813, 126.9818);
+        segmentWaypoints = [waypoints[i], alternativePath, waypoints[i + 1]];
+      }
+      
+      // 각 구간별 라우팅
+      const segmentRoutingControl = L.Routing.control({
+        waypoints: segmentWaypoints,
+        lineOptions: {
+          styles: [{ 
+            color: '#374151',
+            weight: 7,
+            opacity: 1.0,
+            dashArray: '0.5, 12',
+            smoothFactor: 5.0,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }]
+        },
+        addWaypoints: false,
+        draggableWaypoints: false,
+        fitSelectedRoutes: false,
+        show: false,
+        createMarker: function() { return null; },
+        router: L.Routing.osrmv1({
+          serviceUrl: 'https://router.project-osrm.org/route/v1',
+          profile: 'foot',
+          alternatives: false,
+          geometries: 'geojson',
+          overview: 'full'
+        })
+      }).addTo(map);
+      
+      currentRoutingControls.push(segmentRoutingControl);
+      
+      // 라우팅 완료 시 처리
+      segmentRoutingControl.on('routesfound', function(e) {
+        routesFoundCount++;
+        
+        // 각 구간의 경로를 bounds에 추가
+        if (e.routes && e.routes.length > 0) {
+          e.routes[0].coordinates.forEach(coord => {
+            allBounds.extend(coord);
+          });
+          
+          // 이동 시간이 있는 경우 중간 지점에 표시
+          if (moveTime > 0) {
+            const route = e.routes[0];
+            const coordinates = route.coordinates;
+            const midIndex = Math.floor(coordinates.length / 2);
+            const midPoint = coordinates[midIndex];
+            
+            // 이동 시간 표시 마커
+            const timeIcon = L.divIcon({
+              className: 'route-time-marker',
+              html: `<div class="route-time-label">${moveTime}분</div>`,
+              iconSize: [50, 25],
+              iconAnchor: [25, 12]
+            });
+            
+            const timeMarker = L.marker([midPoint.lat, midPoint.lng], {
+              icon: timeIcon,
+              interactive: false,
+              zIndexOffset: 2000
+            }).addTo(map);
+            
+            routeMarkers.push(timeMarker);
+          }
+        }
+        
+        // 모든 구간 라우팅이 완료되면 지도 범위 조정
+        if (routesFoundCount === totalSegments) {
+          // bounds가 유효한 경우에만 조정
+          if (allBounds.isValid()) {
+            // 모든 경로가 로드된 후 한 번만 fitBounds 호출
+            map.setMinZoom(17);
+            map.fitBounds(allBounds, { padding: [80, 80], maxZoom: 17, animate: true });
+            
+            if (currentRoute && currentRoute.id === route.id && routeMarkers.length > 0) {
+              map.once('zoomend', function() {
+                if (currentRoute && currentRoute.id === route.id && routeMarkers.length > 0) {
+                  setTimeout(updateLineWeight, 100);
+                }
+              });
+            }
+          }
+        }
+      });
+    }
+    
+    // 호환성을 위해 currentRoutingControl도 설정
+    if (currentRoutingControls.length > 0) {
+      currentRoutingControl = currentRoutingControls[0];
+    }
+    
+    // 라인 굵기와 점선 스타일을 줌 레벨에 맞게 업데이트하는 함수
+    const updateLineWeight = function() {
+      const zoom = map.getZoom();
+      const baseWeight = 7;  // 기본 두께
+      const minWeight = 6.5;  // 최소 두께
+      const maxWeight = 10;  // 최대 두께 (확대 시 더 두껍게)
+      // 줌 레벨에 따라 두께 조정 (17 기준, 1 레벨당 0.5씩 증가)
+      const adjustedWeight = Math.max(minWeight, Math.min(maxWeight, baseWeight + (zoom - 17) * 0.5));
+      
+      // 점선 스타일은 고정 (줌 레벨 17로 고정)
+      const adjustedDashGap = 0.5;
+      const adjustedDashSpace = 12;
+      
+      // 모든 라우팅 라인 업데이트
+      map.eachLayer(function(layer) {
+        if (layer instanceof L.Polyline) {
+          if (layer.options && (layer.options.color === '#111827' || layer.options.color === '#4b5563' || layer.options.color === '#374151')) {
+            layer.setStyle({
+              weight: adjustedWeight,
+              dashArray: `${adjustedDashGap}, ${adjustedDashSpace}`,
+              smoothFactor: 5.0  // 라인을 더 매끈하게
+            });
+          }
+        }
+      });
+    };
+    
+    setTimeout(updateLineWeight, 300);
+    
+    // 줌 변경 시 라인 굵기 업데이트
+    map.on('zoomend', updateLineWeight);
+  } else if (routeMarkers.length > 0) {
+    // waypoint가 1개 이하인 경우 기본 fitBounds
+    const group = new L.featureGroup(routeMarkers);
+    const routeId = route.id;
+    
+    map.fitBounds(group.getBounds().pad(0.1));
+    
+    map.once('zoomend', function() {
+      if (currentRoute && currentRoute.id === routeId && routeMarkers.length > 0) {
+        // 17보다 더 멀어질 수 없도록 제한
+        map.setMinZoom(17);
+      }
+    });
+  }
+}
+
+// 코스 상세 정보 표시
+function showRouteDetail(route) {
+  const panel = document.getElementById('routeDetailPanel');
+  panel.classList.add('active');
+  
+  document.getElementById('routeDetailTitle').textContent = route.name;
+  document.getElementById('routeDetailDescription').textContent = route.description_ko;
+  
+  const hours = Math.floor(route.total_time_min / 60);
+  const minutes = route.total_time_min % 60;
+  const timeText = hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`;
+  document.getElementById('routeDetailMeta').textContent = `${route.stores.length}개 매장 · 총 ${timeText}`;
+  
+  // 스텝 리스트 생성
+  const stepsContainer = document.getElementById('routeSteps');
+  stepsContainer.innerHTML = '';
+  
+  route.stores.forEach((step, index) => {
+    const store = STORES[step.store_id];
+    if (!store) return;
+    
+    // 상세 데이터 병합 (툴팁 박스와 동일하게)
+    const detail = storeDetails[store.id] || {};
+    const mergedStore = { ...store, ...detail };
+    
+    // 매장 스텝 (툴팁 박스와 동일한 내용)
+    const stepDiv = document.createElement('div');
+    stepDiv.className = 'route-step';
+    
+    let tagsHtml = '';
+    if (mergedStore.space_mood_tags && mergedStore.space_mood_tags.length > 0) {
+      tagsHtml = '<div class="route-step-tags">' + 
+        mergedStore.space_mood_tags.map(tag => `<span class="route-step-tag">${tag}</span>`).join('') +
+        '</div>';
+    }
+    
+    stepDiv.innerHTML = `
+      <span class="route-step-number">${step.order}</span>
+      <div class="route-step-content">
+        <div class="route-step-store">${mergedStore.name_ko || mergedStore.name}</div>
+        ${mergedStore.name_en ? `<div class="route-step-name-en">${mergedStore.name_en}</div>` : ''}
+        ${mergedStore.origin_city ? `<div class="route-step-city">${mergedStore.origin_city}</div>` : ''}
+        ${tagsHtml}
+      </div>
+    `;
+    
+    stepsContainer.appendChild(stepDiv);
+    
+    // 이동 시간 표시 (마지막 매장이 아닌 경우)
+    if (step.move_to_next_min > 0) {
+      const moveDiv = document.createElement('div');
+      moveDiv.className = 'route-move-time';
+      moveDiv.textContent = `이동 ${step.move_to_next_min}분`;
+      stepsContainer.appendChild(moveDiv);
+    }
+  });
+}
+
+// 툴팁 생성 함수 (중심에서 커지는 애니메이션)
+function createTooltip(store, x, y) {
+  if (tooltip) {
+    tooltip.remove();
+  }
+  tooltip = document.createElement('div');
+  tooltip.className = 'tooltip-box';
+  
+  let tagsHtml = '';
+  if (store.space_mood_tags && store.space_mood_tags.length > 0) {
+    tagsHtml = '<div class="tooltip-tags">' + 
+      store.space_mood_tags.map(tag => `<span class="tooltip-tag">${tag}</span>`).join('') +
+      '</div>';
+  }
+  
+  let homepageHtml = '';
+  if (store.homepage) {
+    homepageHtml = `
+      <div class="tooltip-homepage">
+        <a href="${store.homepage}" target="_blank" rel="noopener noreferrer" class="tooltip-homepage-button">홈페이지</a>
+      </div>
+    `;
+  }
+  
+  tooltip.innerHTML = `
+    <div class="tooltip-name-ko">${store.name_ko || store.name}</div>
+    ${store.name_en ? `<div class="tooltip-name-en">${store.name_en}</div>` : ''}
+    ${store.origin_city ? `<div class="tooltip-city">${store.origin_city}</div>` : ''}
+    ${tagsHtml}
+    ${homepageHtml}
+  `;
+  
+  // 마커 중심 좌표에 툴팁 박스 위치 설정 (translate(-50%, -50%)로 중앙 정렬)
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+  document.body.appendChild(tooltip);
+  
+  // 다음 프레임에서 애니메이션 시작 (마커 중심에서 scale 0에서 1로 확장)
+  requestAnimationFrame(() => {
+    tooltip.classList.add('show');
+  });
+}
+
+// 툴팁 제거 함수
+function removeTooltip() {
+  if (tooltip) {
+    tooltip.classList.remove('show');
+    // 애니메이션 완료 후 제거
+    setTimeout(() => {
+      if (tooltip) {
+        tooltip.remove();
+        tooltip = null;
+      }
+    }, 200);
+  }
+}
+
+// 모드 선택 이벤트 설정
+function setupModeSelection() {
+  const recommendedModeBtn = document.getElementById('recommendedModeBtn');
+  const filterModeBtn = document.getElementById('filterModeBtn');
+  const backToModeSelection = document.getElementById('backToModeSelection');
+  const backToRecommendedModeSelection = document.getElementById('backToRecommendedModeSelection');
+  const modeSelection = document.getElementById('modeSelection');
+  const recommendedModeView = document.getElementById('recommendedModeView');
+  const filterModeView = document.getElementById('filterModeView');
+  
+  const courseCardsContainer = document.querySelector('.course-cards-container');
+  
+  const resetToModeSelection = () => {
+    modeSelection.style.display = 'flex';
+    recommendedModeView.classList.remove('active');
+    filterModeView.classList.remove('active');
+    // 모드 버튼 활성화 상태 제거
+    recommendedModeBtn.classList.remove('active');
+    filterModeBtn.classList.remove('active');
+    // 모드 선택 화면일 때 컨테이너 너비 줄이기
+    courseCardsContainer.classList.add('mode-selection-active');
+    courseCardsContainer.classList.remove('filter-mode-active');
+    // 모드 선택 화면일 때 body에 클래스 추가
+    document.body.classList.add('mode-selection-page');
+    // 필터 초기화
+    selectedFilters.clear();
+    document.querySelectorAll('.filter-button').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    const nextStepButton = document.getElementById('nextStepButton');
+    if (nextStepButton) {
+      nextStepButton.disabled = true;
+    }
+  };
+  
+  recommendedModeBtn.addEventListener('click', () => {
+    modeSelection.style.display = 'none';
+    recommendedModeView.classList.add('active');
+    filterModeView.classList.remove('active');
+    // 모드 버튼 활성화 상태 업데이트
+    recommendedModeBtn.classList.add('active');
+    filterModeBtn.classList.remove('active');
+    // 모드 선택 후 컨테이너 너비 원래대로
+    courseCardsContainer.classList.remove('mode-selection-active');
+    courseCardsContainer.classList.remove('filter-mode-active');
+    // 타이틀을 상단으로
+    document.body.classList.remove('mode-selection-page');
+  });
+  
+  filterModeBtn.addEventListener('click', () => {
+    modeSelection.style.display = 'none';
+    recommendedModeView.classList.remove('active');
+    filterModeView.classList.add('active');
+    // 모드 버튼 활성화 상태 업데이트
+    recommendedModeBtn.classList.remove('active');
+    filterModeBtn.classList.add('active');
+    // 필터 모드일 때 컨테이너 너비 줄이기
+    courseCardsContainer.classList.remove('mode-selection-active');
+    courseCardsContainer.classList.add('filter-mode-active');
+    // 타이틀을 상단으로
+    document.body.classList.remove('mode-selection-page');
+    // 다음 단계 버튼 초기화
+    const nextStepButton = document.getElementById('nextStepButton');
+    if (nextStepButton) {
+      nextStepButton.disabled = true;
+    }
+  });
+  
+  // 다음 단계 버튼 클릭 이벤트
+  const nextStepButton = document.getElementById('nextStepButton');
+  if (nextStepButton) {
+    nextStepButton.addEventListener('click', () => {
+      applyFiltersAndSelectRoute();
+    });
+  }
+  
+  backToModeSelection.addEventListener('click', resetToModeSelection);
+  backToRecommendedModeSelection.addEventListener('click', resetToModeSelection);
+  
+  // 초기 상태: 모드 선택 화면이 보이므로 컨테이너 너비 줄이기
+  courseCardsContainer.classList.add('mode-selection-active');
+  // 초기 상태: 모드 선택 화면이므로 타이틀을 정중앙에
+  document.body.classList.add('mode-selection-page');
+}
+
+// 추천 코스 로드
+function loadRecommendedRoutes() {
+  const fullRoutesContainer = document.getElementById('fullRoutes');
+  const shortRoutesContainer = document.getElementById('shortRoutes');
+  
+  fullRoutesContainer.innerHTML = '';
+  shortRoutesContainer.innerHTML = '';
+  
+  // ROUTES 객체에서 모든 코스 가져오기
+  const allRoutes = Object.values(ROUTES);
+  const fullRoutes = allRoutes.filter(r => r.type === 'full');
+  const shortRoutes = allRoutes.filter(r => r.type === 'short');
+  
+  fullRoutes.forEach(route => {
+    const card = createCourseCard(route);
+    fullRoutesContainer.appendChild(card);
+  });
+  
+  shortRoutes.forEach(route => {
+    const card = createCourseCard(route);
+    shortRoutesContainer.appendChild(card);
+  });
+}
+
+// 필터 UI 초기화
+function initFilters() {
+  // 모든 스페이스 태그 수집
+  const allSpaceTags = new Set();
+  const allUseCaseTags = new Set();
+  
+  Object.values(storeDetails).forEach(detail => {
+    if (detail.space_mood_tags) {
+      detail.space_mood_tags.forEach(tag => allSpaceTags.add(tag));
+    }
+    if (detail.use_case_tags) {
+      detail.use_case_tags.forEach(tag => allUseCaseTags.add(tag));
+    }
+  });
+  
+  // Space Mood 필터 버튼 생성
+  const spaceMoodContainer = document.getElementById('spaceMoodFilters');
+  Array.from(allSpaceTags).sort().forEach(tag => {
+    const button = document.createElement('button');
+    button.className = 'filter-button';
+    button.textContent = tag;
+    button.setAttribute('data-tag', tag);
+    button.setAttribute('data-type', 'space_mood');
+    button.addEventListener('click', function() {
+      toggleFilter(tag);
+    });
+    spaceMoodContainer.appendChild(button);
+  });
+  
+  // Use Case 필터 버튼 생성
+  const useCaseContainer = document.getElementById('useCaseFilters');
+  Array.from(allUseCaseTags).sort().forEach(tag => {
+    const button = document.createElement('button');
+    button.className = 'filter-button';
+    button.textContent = tag;
+    button.setAttribute('data-tag', tag);
+    button.setAttribute('data-type', 'use_case');
+    button.addEventListener('click', function() {
+      toggleFilter(tag);
+    });
+    useCaseContainer.appendChild(button);
+  });
+}
+
+// 필터 토글
+function toggleFilter(tag) {
+  const button = document.querySelector(`[data-tag="${tag}"]`);
+  const nextStepButton = document.getElementById('nextStepButton');
+  
+  if (selectedFilters.has(tag)) {
+    selectedFilters.delete(tag);
+    button.classList.remove('active');
+  } else {
+    selectedFilters.add(tag);
+    button.classList.add('active');
+  }
+  
+  // 태그가 하나라도 선택되면 다음 단계 버튼 활성화
+  if (selectedFilters.size > 0) {
+    nextStepButton.disabled = false;
+  } else {
+    nextStepButton.disabled = true;
+  }
+}
+
+// 필터 적용 및 첫 번째 코스 자동 선택
+function applyFiltersAndSelectRoute() {
+  if (selectedFilters.size === 0) {
+    return;
+  }
+  
+  // 모든 코스 가져오기
+  const allRoutes = Object.values(ROUTES);
+  
+  // 필터링: 선택한 태그 중 하나라도 포함된 매장이 있는 코스만 선택
+  const filteredRoutes = allRoutes.filter(route => {
+    // 코스에 포함된 매장들 확인
+    return route.stores.some(step => {
+      const store = STORES[step.store_id];
+      if (!store) return false;
+      
+      const detail = storeDetails[store.id] || {};
+      const spaceMoodTags = detail.space_mood_tags || [];
+      const useCaseTags = detail.use_case_tags || [];
+      
+      // 선택한 필터 태그 중 하나라도 매장에 있으면 true
+      return Array.from(selectedFilters).some(filterTag => {
+        return spaceMoodTags.includes(filterTag) || useCaseTags.includes(filterTag);
+      });
+    });
+  });
+  
+  // 필터링된 코스가 있으면 첫 번째 코스를 자동 선택
+  if (filteredRoutes.length > 0) {
+    const selectedRoute = filteredRoutes[0];
+    selectRoute(selectedRoute.id);
+  } else {
+    alert('선택한 필터에 맞는 코스가 없습니다.');
+  }
+}
+
+// 맵 초기화 (코스 제거)
+function clearMap() {
+  // 먼저 currentRoute를 null로 설정하여 fitBounds의 zoomend 핸들러가 실행되지 않도록 함
+  currentRoute = null;
+  
+  // 툴팁 제거
+  removeTooltip();
+  
+  // 라우팅 컨트롤 제거
+  if (currentRoutingControl) {
+    map.removeControl(currentRoutingControl);
+    currentRoutingControl = null;
+  }
+  // 모든 라우팅 컨트롤 제거
+  if (currentRoutingControls && currentRoutingControls.length > 0) {
+    currentRoutingControls.forEach(control => {
+      if (control) {
+        if (control._polyline) {
+          // 직접 경로인 경우
+          control.remove();
+        } else {
+          // 라우팅 컨트롤인 경우
+          map.removeControl(control);
+        }
+      }
+    });
+    currentRoutingControls = [];
+  }
+  
+  // 마커 제거
+  routeMarkers.forEach(marker => {
+    if (map.hasLayer(marker)) {
+      map.removeLayer(marker);
+    }
+  });
+  routeMarkers = [];
+  
+  // 맵 크기 재계산
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 50);
+}
+
+// 뒤로가기
+document.getElementById('backButton').addEventListener('click', () => {
+  // UI 먼저 숨기기 (애니메이션 시작)
+  document.getElementById('backButton').classList.remove('active');
+  document.getElementById('routeDetailPanel').classList.remove('active');
+  
+  // 맵 초기화 (마커와 라우팅만 제거)
+  clearMap();
+  
+  // 애니메이션 완료 후 코스 선택 화면 표시
+  setTimeout(() => {
+    document.getElementById('courseSelection').classList.remove('hidden');
+  }, 200); // 애니메이션 중간 시점에 시작
+});
+
+// 페이지 로드 시 맵 초기화
+initMap();
+</script>
+</body>
+</html>

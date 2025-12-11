@@ -1,0 +1,143 @@
+[
+  {
+    "id": "le_labo_bukchon",
+    "name_ko": "르 라보 북촌 한옥",
+    "name_en": "Le Labo Bukchon Hanok",
+    "origin_city": "New York",
+    "main_categories": ["Perfume", "Body care", "Home fragrance"],
+    "space_mood_tags": ["Hanok / Heritage", "Gallery / White cube", "Lab / Atelier"],
+    "scent_style_tags": ["Artistic niche", "Clean / Minimal", "Bold / Statement"],
+    "use_case_tags": ["For collectors"]
+  },
+  {
+    "id": "born_to_stand_out_samcheong",
+    "name_ko": "본투스탠드아웃 플래그십 삼청",
+    "name_en": "Born to Stand Out Flagship Samcheong",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Body care", "Home fragrance"],
+    "space_mood_tags": ["Pop / Graphic", "Lifestyle store"],
+    "scent_style_tags": ["Artistic niche", "Bold / Statement"],
+    "use_case_tags": ["For collectors"]
+  },
+  {
+    "id": "daniels_truth_samcheong",
+    "name_ko": "다니엘트루스 퍼퓸하우스 삼청",
+    "name_en": "Daniel's Truth Perfume House Samcheong",
+    "origin_city": "California",
+    "main_categories": ["Perfume", "Home fragrance"],
+    "space_mood_tags": ["Cozy / Homey", "Lifestyle store"],
+    "scent_style_tags": ["Soft / Everyday", "Natural / Botanical"],
+    "use_case_tags": ["For beginners"]
+  },
+  {
+    "id": "villa_herbatium",
+    "name_ko": "빌라 에르바티움",
+    "name_en": "Villa Herbatium",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Home fragrance"],
+    "space_mood_tags": ["Gallery / White cube"],
+    "scent_style_tags": ["Artistic niche", "Emotional", "Natural / Botanical"],
+    "use_case_tags": ["For collectors"]
+  },
+  {
+    "id": "aesop_samcheong",
+    "name_ko": "이솝 삼청",
+    "name_en": "Aesop Samcheong",
+    "origin_city": "AU",
+    "main_categories": ["Perfume", "Body care", "Hand care", "Home fragrance"],
+    "space_mood_tags": ["Gallery / White cube"],
+    "scent_style_tags": ["Clean / Minimal", "Natural / Botanical", "Body & hand focus"],
+    "use_case_tags": []
+  },
+  {
+    "id": "nonfiction_samcheong",
+    "name_ko": "논픽션 삼청",
+    "name_en": "NONFICTION Samcheong",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Body care", "Hand care", "Home fragrance"],
+    "space_mood_tags": ["Gallery / White cube", "Lifestyle store"],
+    "scent_style_tags": ["Clean / Minimal", "Soft / Everyday"],
+    "use_case_tags": ["For beginners"]
+  },
+  {
+    "id": "youssoful_samcheong",
+    "name_ko": "유쏘풀 삼청",
+    "name_en": "YOUSSOFUL Samcheong",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Home fragrance"],
+    "space_mood_tags": ["Pop / Graphic", "Lifestyle store"],
+    "scent_style_tags": ["Soft / Everyday"],
+    "use_case_tags": ["For beginners"]
+  },
+  {
+    "id": "cosmic_mansion_bukchon",
+    "name_ko": "코스믹맨션 북촌",
+    "name_en": "Cosmic Mansion Bukchon",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Home fragrance"],
+    "space_mood_tags": ["Cozy / Homey", "Lifestyle store"],
+    "scent_style_tags": ["Soft / Everyday", "Home fragrance"],
+    "use_case_tags": ["For beginners", "Home fragrance"]
+  },
+  {
+    "id": "tamburins_samcheong",
+    "name_ko": "탬버린즈 삼청 플래그십스토어",
+    "name_en": "Tamburins Samcheong Flagship",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Body care", "Hand care", "Home fragrance"],
+    "space_mood_tags": ["Gallery / White cube", "Pop / Graphic"],
+    "scent_style_tags": ["Artistic niche", "Bold / Statement", "Body & hand focus"],
+    "use_case_tags": ["For collectors"]
+  },
+  {
+    "id": "granhand_sogyeok",
+    "name_ko": "그랑핸드 소격",
+    "name_en": "Granhand Sogyeok",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Body care", "Home fragrance"],
+    "space_mood_tags": ["Cozy / Homey", "Lifestyle store"],
+    "scent_style_tags": ["Soft / Everyday", "Natural / Botanical", "Home fragrance"],
+    "use_case_tags": ["For beginners", "Home fragrance"]
+  },
+  {
+    "id": "lenezlab_gyedong",
+    "name_ko": "르네랩",
+    "name_en": "LE NEZ Lab",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Home fragrance"],
+    "space_mood_tags": ["Lab / Atelier", "Hanok / Heritage"],
+    "scent_style_tags": ["Artisan", "Artistic niche", "Natural / Botanical"],
+    "use_case_tags": ["For collectors"]
+  },
+  {
+    "id": "hetras_anguk",
+    "name_ko": "헤트라스 안국",
+    "name_en": "Hetras Anguk",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Body care", "Home fragrance"],
+    "space_mood_tags": ["Lifestyle store"],
+    "scent_style_tags": ["Soft / Everyday", "Home fragrance", "Body & hand focus"],
+    "use_case_tags": ["For beginners", "Home fragrance"]
+  },
+  {
+    "id": "chwi_bukchon",
+    "name_ko": "취 북촌 플래그십스토어",
+    "name_en": "Chwi Bukchon Flagship",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Hand care", "Home fragrance"],
+    "space_mood_tags": ["Hanok / Heritage"],
+    "scent_style_tags": ["K-heritage scent", "Natural / Botanical"],
+    "use_case_tags": ["For collectors"]
+  },
+  {
+    "id": "matthew_chang_anguk",
+    "name_ko": "메튜장 안국",
+    "name_en": "Matthew Chang Anguk",
+    "origin_city": "Seoul",
+    "main_categories": ["Perfume", "Body care"],
+    "space_mood_tags": ["Gallery / White cube", "Lifestyle store"],
+    "scent_style_tags": ["Artistic niche", "Soft / Everyday"],
+    "use_case_tags": ["For beginners"]
+  }
+]
+
